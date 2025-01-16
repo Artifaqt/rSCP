@@ -140,9 +140,6 @@ local function ResetToDefault()
     -- Remove all shaders
     RemoveShaders()
 
-    -- Reapply shaders with default values
-    ApplyShaders()
-
     -- Reset UI Toggles and Sliders
     Toggle_EnableShaders:Set(false) -- Reset the Enable Shaders toggle
     Slider_TimeOfDay:Set(DefaultValues.ClockTime)
@@ -154,6 +151,7 @@ local function ResetToDefault()
     ColorPicker_AtmosphereColor:Set(DefaultValues.AtmosphereColor)
     Toggle_RainbowAtmosphere:Set(DefaultValues.RainbowEnabled)
     Slider_RainbowSpeed:Set(DefaultValues.RainbowSpeed)
+    Slider_Brightness:Set(DefaultValues.Brightness)
 
     -- Reset Rainbow Atmosphere
     rainbowEnabled = DefaultValues.RainbowEnabled
@@ -172,10 +170,11 @@ RunService.Heartbeat:Connect(function(deltaTime)
 end)
 
 -- Create Tabs
-local GeneralTab = Window:CreateTab("General", "settings")
+local GeneralTab = Window:CreateTab("General", "earth")
 local AtmosphereTab = Window:CreateTab("Atmosphere", "cloud-rain")
 local EffectsTab = Window:CreateTab("Effects", "sliders")
 local OtherTab = Window:CreateTab("Other", "meh")
+local SettingsTab = Window:CreateTab("Settings", "settings")
 
 -- General Tab
 Toggle_EnableShaders = GeneralTab:CreateToggle({
@@ -200,6 +199,17 @@ Slider_TimeOfDay = GeneralTab:CreateSlider({
     Callback = function(value)
         Light.ClockTime = value
         print("Time of day set to: " .. value)
+    end
+})
+
+Slider_Brightness = GeneralTab:CreateSlider({
+    Name = "Brightness",
+    Range = {0, 5},
+    Increment = 0.1,
+    CurrentValue = Light.Brightness,
+    Callback = function(value)
+        Light.Brightness = value
+        print("Brightness set to: " .. value)
     end
 })
 
@@ -241,6 +251,17 @@ Toggle_RainbowAtmosphere = AtmosphereTab:CreateToggle({
     Callback = function(enabled)
         rainbowEnabled = enabled
         print("Rainbow Atmosphere " .. (enabled and "Enabled" or "Disabled"))
+    end
+})
+
+AtmosphereTab:CreateSlider({
+    Name = "Water Wave Size",
+    Range = {0, 1},
+    Increment = 0.01,
+    CurrentValue = workspace.Terrain.WaterWaveSize,
+    Callback = function(value)
+        workspace.Terrain.WaterWaveSize = value
+        print("Water Wave Size set to: " .. value)
     end
 })
 
@@ -346,3 +367,44 @@ OtherTab:CreateToggle({
         end
     end,
  })
+
+--Settings tab options
+SettingsTab:CreateDropdown({
+    Name = "Select Theme",
+    Options = {"Default", "Amber Glow", "Amethyst", "Bloom", "Dark Blue", "Green", "Light", "Ocean", "Serenity"},
+    CurrentOption = "Bloom", -- Initial Theme
+    Callback = function(selectedTheme)
+        -- Map the theme name to its exact identifier
+        local themeMap = {
+            ["Default"] = "Default",
+            ["Amber Glow"] = "AmberGlow",
+            ["Amethyst"] = "Amethyst",
+            ["Bloom"] = "Bloom",
+            ["Dark Blue"] = "DarkBlue",
+            ["Green"] = "Green",
+            ["Light"] = "Light",
+            ["Ocean"] = "Ocean",
+            ["Serenity"] = "Serenity"
+        }
+
+        -- Fetch the identifier for the selected theme
+        local themeIdentifier = themeMap[selectedTheme]
+
+        if themeIdentifier then
+            Window:SetTheme(themeIdentifier) -- Apply the theme
+            Rayfield:Notify({
+                Title = "Theme Changed",
+                Content = "Theme updated to: " .. selectedTheme,
+                Duration = 4
+            })
+            print("Theme changed to: " .. selectedTheme .. " (" .. themeIdentifier .. ")")
+        else
+            Rayfield:Notify({
+                Title = "Error",
+                Content = "Invalid theme selected: " .. selectedTheme,
+                Duration = 4
+            })
+            print("Invalid theme selected: " .. selectedTheme)
+        end
+    end
+})
