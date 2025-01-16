@@ -379,12 +379,37 @@ OtherTab:CreateButton({
     end,
  })
 
-OtherTab:CreateButton({
+ OtherTab:CreateButton({
     Name = "IY",
     Callback = function()
              local IsStudio = false
              loadstring(game:HttpGet("https://raw.githubusercontent.com/EnterpriseExperience/crazyDawg/main/InfYieldOther.lua"))()
 end,
+})
+
+OtherTab:CreateInput({
+    Name = "Copy User's Avatar (NEEDS ADMIN GAMEPASS)",
+    CurrentValue = "", -- Start with an empty value
+    PlaceholderText = "Enter Roblox Username",
+    RemoveTextAfterFocusLost = true,
+    Flag = "CopyAvatarInput", -- Unique flag for this input
+    Callback = function(inputValue)
+        -- Fire the server event with the input value
+        local args = {
+            [1] = inputValue -- User-provided value
+        }
+
+        -- Trigger the server-side event
+        game:GetService("ReplicatedStorage").ModifyUsername:FireServer(unpack(args))
+
+        -- Feedback for debugging or user notification
+        print("Fired server with username: " .. inputValue)
+        Rayfield:Notify({
+            Title = "Success",
+            Content = "Username '" .. inputValue .. "' sent to the server.",
+            Duration = 5
+        })
+    end
 })
 
 OtherTab:CreateToggle({
