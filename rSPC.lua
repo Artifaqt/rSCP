@@ -309,7 +309,7 @@ OtherTab:CreateButton({
     Name = "VC Unban",
     Callback = function()
              local IsStudio = false
- game:GetService("VoiceChatService"):joinVoice()
+             game:GetService("VoiceChatService"):joinVoice()
     end,
  })
 
@@ -317,7 +317,7 @@ OtherTab:CreateButton({
     Name = "IY",
     Callback = function()
              local IsStudio = false
-loadstring(game:HttpGet("https://infyiff.github.io/resources/IY_FE.txt"))()
+             loadstring(game:HttpGet("https://raw.githubusercontent.com/EnterpriseExperience/crazyDawg/main/InfYieldOther.lua"))()
 end,
 })
 
