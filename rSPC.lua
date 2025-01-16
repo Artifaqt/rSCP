@@ -175,6 +175,7 @@ end)
 local GeneralTab = Window:CreateTab("General", "settings")
 local AtmosphereTab = Window:CreateTab("Atmosphere", "cloud-rain")
 local EffectsTab = Window:CreateTab("Effects", "sliders")
+local OtherTab = Window:CreateTab("Other", "meh")
 
 -- General Tab
 Toggle_EnableShaders = GeneralTab:CreateToggle({
@@ -302,3 +303,12 @@ Slider_Saturation = EffectsTab:CreateSlider({
         end
     end
 })
+
+--Useful Other Stuff
+local Button = OtherTab:CreateButton({
+    Name = "VC Unban",
+    Callback = function()
+             local IsStudio = false
+ game:GetService("VoiceChatService"):joinVoice()
+    end,
+ })
