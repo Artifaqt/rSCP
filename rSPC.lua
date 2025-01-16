@@ -374,6 +374,11 @@ SettingsTab:CreateDropdown({
     Options = {"Default", "Amber Glow", "Amethyst", "Bloom", "Dark Blue", "Green", "Light", "Ocean", "Serenity"},
     CurrentOption = "Dark Blue", -- Initial Theme
     Callback = function(selectedTheme)
+        -- Ensure selectedTheme is a string
+        if type(selectedTheme) == "table" then
+            selectedTheme = selectedTheme[1] -- Use the first selection if multiple
+        end
+
         -- Map the theme name to its exact identifier
         local themeMap = {
             ["Default"] = "Default",
@@ -391,7 +396,7 @@ SettingsTab:CreateDropdown({
         local themeIdentifier = themeMap[selectedTheme]
 
         if themeIdentifier then
-            Window:SetTheme(themeIdentifier) -- Apply the theme
+            Window.ModifyTheme(themeIdentifier) -- Apply the theme
             Rayfield:Notify({
                 Title = "Theme Changed",
                 Content = "Theme updated to: " .. selectedTheme,
@@ -401,10 +406,10 @@ SettingsTab:CreateDropdown({
         else
             Rayfield:Notify({
                 Title = "Error",
-                Content = "Invalid theme selected: " .. selectedTheme,
+                Content = "Invalid theme selected: " .. tostring(selectedTheme),
                 Duration = 4
             })
-            print("Invalid theme selected: " .. selectedTheme)
+            print("Invalid theme selected: " .. tostring(selectedTheme))
         end
     end
 })
