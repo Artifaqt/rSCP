@@ -20,6 +20,17 @@ Rayfield:Notify({
 -- Services
 local RunService = game:GetService("RunService")
 local Light = game.Lighting
+local Lighting = game:GetService("Lighting")
+local Camera = workspace.CurrentCamera
+
+-- Initialize Motion Blur
+local BlurEffect = Instance.new("BlurEffect", Lighting)
+BlurEffect.Size = 0 -- Start with no blur
+
+-- Variables for Motion Blur
+local prevCameraPosition = Camera.CFrame.Position
+local motionBlurEnabled = false
+local blurIntensityFactor = 5 -- Default intensity multiplier
 
 -- Shader Variables
 local ShaderInstances = { -- Table to store shader instances
@@ -55,6 +66,7 @@ local DefaultValues = {
 local Toggle_EnableShaders, Slider_TimeOfDay, Button_ResetDefaults
 local Slider_BloomIntensity, Slider_BlurSize, Slider_SunRaysIntensity, Slider_Saturation
 local Slider_AtmosphereOpacity, ColorPicker_AtmosphereColor, Toggle_RainbowAtmosphere, Slider_RainbowSpeed
+local MotionBlurToggle, BlurIntensitySlider
 
 -- Function to Apply Shaders
 local function ApplyShaders()
@@ -129,6 +141,16 @@ local function RemoveShaders()
     }
 end
 
+-- Motion Blur Logic
+RunService.RenderStepped:Connect(function()
+    if motionBlurEnabled then
+        local currentCameraPosition = Camera.CFrame.Position
+        local cameraVelocity = (currentCameraPosition - prevCameraPosition).Magnitude
+        BlurEffect.Size = math.clamp(cameraVelocity * blurIntensityFactor, 0, 24) -- Adjust blur size
+        prevCameraPosition = currentCameraPosition
+    end
+end)
+
 -- Function to Reset All Values
 local function ResetToDefault()
     -- Reset Lighting
@@ -152,6 +174,8 @@ local function ResetToDefault()
     Toggle_RainbowAtmosphere:Set(DefaultValues.RainbowEnabled)
     Slider_RainbowSpeed:Set(DefaultValues.RainbowSpeed)
     Slider_Brightness:Set(DefaultValues.Brightness)
+    Toggle_EnableMotionBlur:Set(false)
+
 
     -- Reset Rainbow Atmosphere
     rainbowEnabled = DefaultValues.RainbowEnabled
@@ -210,6 +234,27 @@ Slider_Brightness = GeneralTab:CreateSlider({
     Callback = function(value)
         Light.Brightness = value
         print("Brightness set to: " .. value)
+    end
+})
+
+Toggle_EnableMotionBlur = GeneralTab:CreateToggle({
+    Name = "Enable Motion Blur",
+    CurrentValue = false,
+    Callback = function(enabled)
+        motionBlurEnabled = enabled
+        if not enabled then
+            BlurEffect.Size = 0 -- Reset blur when disabled
+        end
+    end
+})
+
+EffectsTab:CreateSlider({
+    Name = "Blur Intensity",
+    Range = {1, 10},
+    Increment = 1,
+    CurrentValue = blurIntensityFactor,
+    Callback = function(value)
+        blurIntensityFactor = value
     end
 })
 
