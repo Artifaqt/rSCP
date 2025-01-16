@@ -372,7 +372,7 @@ OtherTab:CreateToggle({
 SettingsTab:CreateDropdown({
     Name = "Select Theme",
     Options = {"Default", "Amber Glow", "Amethyst", "Bloom", "Dark Blue", "Green", "Light", "Ocean", "Serenity"},
-    CurrentOption = "Bloom", -- Initial Theme
+    CurrentOption = "Dark Blue", -- Initial Theme
     Callback = function(selectedTheme)
         -- Map the theme name to its exact identifier
         local themeMap = {
