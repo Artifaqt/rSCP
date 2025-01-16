@@ -320,3 +320,29 @@ OtherTab:CreateButton({
 loadstring(game:HttpGet("https://infyiff.github.io/resources/IY_FE.txt"))()
 end,
 })
+
+OtherTab:CreateToggle({
+    Name = "No Void",
+    CurrentValue = false, -- The initial state of the toggle (off)
+    Flag = "NoVoidToggle", -- Unique identifier for the toggle
+    Callback = function(enabled)
+        local isStudio = game:GetService("RunService"):IsStudio()
+        if isStudio then
+            warn("This feature cannot be used in Studio mode.")
+            return
+        end
+ 
+        local Workspace = game:GetService("Workspace")
+        local Terrain = Workspace.Terrain
+ 
+        if enabled then
+            -- Fill the void when the toggle is enabled
+            Terrain:FillBlock(CFrame.new(66, -10, 72.5), Vector3.new(10000, 16, 10000), Enum.Material.Asphalt)
+            print("Void filled.")
+        else
+            -- Remove the filled block when the toggle is disabled
+            Terrain:Clear() -- This will clear all terrain modifications; adjust if you want more specific removal.
+            print("Void cleared.")
+        end
+    end,
+ })
