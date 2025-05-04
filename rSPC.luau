@@ -559,8 +559,10 @@ OtherTab:CreateButton({
         end
     end,
 })
-
---Settings tab options
+---------------------------------------------------
+-- Settings Tab
+---------------------------------------------------
+local SettingsTab = Window:CreateTab("Settings", "settings")
 SettingsTab:CreateDropdown({
     Name = "Select Theme",
     Options = {"Default", "Amber Glow", "Amethyst", "Bloom", "Dark Blue", "Green", "Light", "Ocean", "Serenity"},
@@ -605,3 +607,11 @@ SettingsTab:CreateDropdown({
         end
     end
 })
+---------------------------------------------------
+-- Global UI Toggle
+---------------------------------------------------
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.RightShift and not gameProcessed then
+        Window:Toggle()
+    end
+end)
