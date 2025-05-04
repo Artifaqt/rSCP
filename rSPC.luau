@@ -1,55 +1,35 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
-local Window = Rayfield:CreateWindow({
-    Name = "Shader Control Panel by Artifaqt",
-    LoadingTitle = "Shader System",
-    Icon = "sun", -- Lucide icon for the window
-    LoadingSubtitle = "by artifaqt",
-    Theme = "DarkBlue",
-    KeySystem = false -- Removed configuration-saving to avoid issues
-})
-
--- Welcome Notification
-Rayfield:Notify({
-    Title = "Welcome to Shader Control Panel",
-    Content = "Customize and enhance your Roblox experience with shaders! ",
-    Duration = 6.5,
-    Image = "sun" -- Lucide icon or asset ID
-})
-
--- Services
+local Players = game:GetService("Players")
+local VoiceChatService = game:GetService("VoiceChatService")
+local VoiceChatInternal = game:GetService("VoiceChatInternal")
+local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local Light = game.Lighting
+local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
-local Camera = workspace.CurrentCamera
+local Camera = Workspace.CurrentCamera
+local localPlayer = Players.LocalPlayer
 
--- Initialize Motion Blur
-local BlurEffect = Instance.new("BlurEffect", Lighting)
-BlurEffect.Size = 0 -- Start with no blur
-
--- Variables for Motion Blur
-local prevCameraPosition = Camera.CFrame.Position
-local motionBlurEnabled = false
-local blurIntensityFactor = 5 -- Default intensity multiplier
-
--- Shader Variables
-local ShaderInstances = { -- Table to store shader instances
-    Sky = nil,
-    Bloom = nil,
-    Blur = nil,
-    ColorCorrection = nil,
-    SunRays = nil,
-    Atmosphere = nil
-}
-
--- Rainbow Variables
+local autoRejoin = false
+local baseplate, followBaseplate
+local baseplateVisible = false
+local followBaseplateEnabled = false
 local rainbowEnabled = false
-local rainbowSpeed = .5 -- Default rainbow speed
-local rainbowHue = 0 -- Keeps track of the current hue for the rainbow effect
+local hue, rainbowSpeed = 0, 1
+local baseplateColor = Color3.new(0.5, 0.5, 0.5)
+local baseplateTransparency = 0.3
+local baseplateSize = Vector3.new(512, 1, 512)
+local baseplateYPosition = -0.5
+local material = Enum.Material.SmoothPlastic
 
--- Default Values for Reset
+-- Shader-related variables
+local ShaderInstances = {}
+local BlurEffect = Instance.new("BlurEffect", Lighting)
+BlurEffect.Size = 0
+local motionBlurEnabled = false
+local blurIntensityFactor = 5
+local rainbowHue = 0
+
 local DefaultValues = {
-    ClockTime = 12, -- Midday
+    ClockTime = 12,
     Brightness = 2,
     Ambient = Color3.fromRGB(127, 127, 127),
     OutdoorAmbient = Color3.fromRGB(127, 127, 127),
@@ -63,113 +43,315 @@ local DefaultValues = {
     RainbowSpeed = .5
 }
 
--- Other Variables (lowkey fuck organization bro)
-local isRejoinEnabled = false
-local AnimationSpeed = 1
+-- Rayfield UI
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
--- References to UI Elements
-local Toggle_EnableShaders, Slider_TimeOfDay, Button_ResetDefaults
+local Window = Rayfield:CreateWindow({
+    Name = "Roblox Enhancement Suite",
+    LoadingTitle = "Loading Modules...",
+    LoadingSubtitle = "by Artifaqt",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "RobloxEnhancer",
+        FileName = "Settings"
+    },
+    KeySystem = false
+})
+-- Rayfield UI
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Roblox Enhancement Suite",
+    LoadingTitle = "Loading Modules...",
+    LoadingSubtitle = "by Artifaqt",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "Rayfield",
+        FileName = "EnhancedControlPanel"
+    },
+    KeySystem = false
+})
+
+---------------------------------------------------
+-- Voice Chat Tab
+---------------------------------------------------
+local VCTab = Window:CreateTab("Voice Chat", "mic")
+
+VCTab:CreateToggle({
+    Name = "Auto Rejoin",
+    CurrentValue = false,
+    Flag = "AutoRejoin",
+    Callback = function(Value)
+        autoRejoin = Value
+    end
+})
+
+VCTab:CreateButton({
+    Name = "Join Voice Chat",
+    Callback = function()
+        VoiceChatService:joinVoice()
+    end
+})
+
+VCTab:CreateButton({
+    Name = "Leave Voice Chat",
+    Callback = function()
+        VoiceChatService:leaveVoice()
+    end
+})
+
+VoiceChatInternal.LocalPlayerModerated:Connect(function()
+    if autoRejoin then
+        VoiceChatService:leaveVoice()
+        task.wait(1)
+        VoiceChatService:joinVoice()
+    end
+end)
+
+---------------------------------------------------
+-- Baseplate Tab
+---------------------------------------------------
+local BaseplateTab = Window:CreateTab("Baseplate", "grid-3x3")
+
+local function updateBaseplate()
+    if baseplate then
+        baseplate.Size = baseplateSize
+        baseplate.Position = Vector3.new(0, baseplateYPosition, 0)
+        baseplate.Color = baseplateColor
+        baseplate.Transparency = baseplateTransparency
+        baseplate.Material = material
+        baseplate.TopSurface = Enum.SurfaceType.Smooth
+    end
+    if followBaseplate then
+        followBaseplate.Size = Vector3.new(baseplateSize.X, 1, baseplateSize.Z)
+        local pos = followBaseplate.Position
+        followBaseplate.Position = Vector3.new(pos.X, baseplateYPosition, pos.Z)
+        followBaseplate.Color = baseplateColor
+        followBaseplate.Transparency = baseplateTransparency
+        followBaseplate.Material = material
+        followBaseplate.TopSurface = Enum.SurfaceType.Smooth
+    end
+end
+
+local function createBaseplate()
+    if not baseplate then
+        baseplate = Instance.new("Part")
+        baseplate.Anchored = true
+        baseplate.Name = "CustomBaseplate"
+    end
+    updateBaseplate()
+    baseplate.Parent = Workspace
+end
+
+local function createFollowBaseplate()
+    if not followBaseplate then
+        followBaseplate = Instance.new("Part")
+        followBaseplate.Anchored = true
+        followBaseplate.Name = "FollowBaseplate"
+        followBaseplate.Parent = Workspace
+        updateBaseplate()
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if followBaseplateEnabled and followBaseplate and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local pos = localPlayer.Character.HumanoidRootPart.Position
+        followBaseplate.Position = Vector3.new(pos.X, baseplateYPosition, pos.Z)
+    end
+    if rainbowEnabled then
+        hue = (tick() * rainbowSpeed % 5) / 5
+        baseplateColor = Color3.fromHSV(hue, 1, 1)
+        updateBaseplate()
+    end
+end)
+
+BaseplateTab:CreateToggle({
+    Name = "Toggle Fixed Baseplate",
+    CurrentValue = false,
+    Flag = "FixedBaseplate",
+    Callback = function(Value)
+        baseplateVisible = Value
+        if baseplateVisible then
+            createBaseplate()
+        elseif baseplate then
+            baseplate.Parent = nil
+        end
+    end
+})
+
+BaseplateTab:CreateToggle({
+    Name = "Follow Player Baseplate",
+    CurrentValue = false,
+    Flag = "FollowBaseplate",
+    Callback = function(Value)
+        followBaseplateEnabled = Value
+        if followBaseplateEnabled then
+            createFollowBaseplate()
+        elseif followBaseplate then
+            followBaseplate:Destroy()
+            followBaseplate = nil
+        end
+    end
+})
+
+BaseplateTab:CreateColorPicker({
+    Name = "Baseplate Color",
+    Color = baseplateColor,
+    Flag = "BaseplateColor",
+    Callback = function(Value)
+        baseplateColor = Value
+        updateBaseplate()
+    end
+})
+
+BaseplateTab:CreateToggle({
+    Name = "Enable Rainbow Color",
+    CurrentValue = false,
+    Flag = "RainbowColor",
+    Callback = function(Value)
+        rainbowEnabled = Value
+    end
+})
+
+BaseplateTab:CreateSlider({
+    Name = "Rainbow Speed",
+    Range = {0.1, 10},
+    Increment = 0.1,
+    CurrentValue = 1,
+    Flag = "RainbowSpeed",
+    Callback = function(Value)
+        rainbowSpeed = Value
+    end
+})
+
+BaseplateTab:CreateSlider({
+    Name = "Baseplate Opacity",
+    Range = {0, 1},
+    Increment = 0.05,
+    CurrentValue = 1 - baseplateTransparency,
+    Flag = "BaseplateOpacity",
+    Callback = function(Value)
+        baseplateTransparency = 1 - Value
+        updateBaseplate()
+    end
+})
+
+BaseplateTab:CreateInput({
+    Name = "Baseplate Size X",
+    PlaceholderText = tostring(baseplateSize.X),
+    RemoveTextAfterFocusLost = false,
+    NumbersOnly = true,
+    Flag = "SizeX",
+    Callback = function(Value)
+        baseplateSize = Vector3.new(tonumber(Value), 1, baseplateSize.Z)
+        updateBaseplate()
+    end
+})
+
+BaseplateTab:CreateInput({
+    Name = "Baseplate Size Z",
+    PlaceholderText = tostring(baseplateSize.Z),
+    RemoveTextAfterFocusLost = false,
+    NumbersOnly = true,
+    Flag = "SizeZ",
+    Callback = function(Value)
+        baseplateSize = Vector3.new(baseplateSize.X, 1, tonumber(Value))
+        updateBaseplate()
+    end
+})
+
+BaseplateTab:CreateInput({
+    Name = "Baseplate Height (Y Position)",
+    PlaceholderText = tostring(baseplateYPosition),
+    RemoveTextAfterFocusLost = false,
+    NumbersOnly = true,
+    Flag = "HeightY",
+    Callback = function(Value)
+        baseplateYPosition = tonumber(Value)
+        updateBaseplate()
+    end
+})
+
+BaseplateTab:CreateDropdown({
+    Name = "Baseplate Material",
+    Options = {"Plastic", "SmoothPlastic", "Neon", "Wood", "WoodPlanks", "Concrete", "Slate", "Granite", "Marble", "Grass", "Sand", "Metal"},
+    CurrentOption = "SmoothPlastic",
+    Flag = "MaterialType",
+    Callback = function(Selection)
+        local selected = type(Selection) == "table" and Selection[1] or Selection
+        if Enum.Material[selected] then
+            material = Enum.Material[selected]
+            updateBaseplate()
+        end
+    end
+})
+
+local ShaderTab = Window:CreateTab("Shaders", "sun")
+
+local Toggle_EnableShaders, Slider_TimeOfDay, Slider_Brightness, Toggle_MotionBlur, Slider_BlurIntensity
 local Slider_BloomIntensity, Slider_BlurSize, Slider_SunRaysIntensity, Slider_Saturation
 local Slider_AtmosphereOpacity, ColorPicker_AtmosphereColor, Toggle_RainbowAtmosphere, Slider_RainbowSpeed
-local Toggle_MotionBlur, Slider_BlurIntensity
 
--- Function to Apply Shaders
 local function ApplyShaders()
     if not ShaderInstances.Sky then
-        local Sky = Instance.new("Sky", Light)
+        local Sky = Instance.new("Sky", Lighting)
         Sky.SkyboxBk = "http://www.roblox.com/asset/?id=144933338"
         Sky.SkyboxDn = "http://www.roblox.com/asset/?id=144931530"
         Sky.SkyboxFt = "http://www.roblox.com/asset/?id=144933262"
         Sky.SkyboxLf = "http://www.roblox.com/asset/?id=144933244"
         Sky.SkyboxRt = "http://www.roblox.com/asset/?id=144933299"
         Sky.SkyboxUp = "http://www.roblox.com/asset/?id=144931564"
-        Sky.StarCount = 5000
-        Sky.SunAngularSize = 5
         ShaderInstances.Sky = Sky
     end
-
     if not ShaderInstances.Bloom then
-        local Bloom = Instance.new("BloomEffect", Light)
+        local Bloom = Instance.new("BloomEffect", Lighting)
         Bloom.Intensity = DefaultValues.BloomIntensity
         Bloom.Size = 10
         Bloom.Threshold = 0.8
         ShaderInstances.Bloom = Bloom
     end
-
     if not ShaderInstances.Blur then
-        local Blur = Instance.new("BlurEffect", Light)
+        local Blur = Instance.new("BlurEffect", Lighting)
         Blur.Size = DefaultValues.BlurSize
         ShaderInstances.Blur = Blur
     end
-
     if not ShaderInstances.ColorCorrection then
-        local ColorCorrection = Instance.new("ColorCorrectionEffect", Light)
-        ColorCorrection.Brightness = 0
-        ColorCorrection.Contrast = 0.1
+        local ColorCorrection = Instance.new("ColorCorrectionEffect", Lighting)
         ColorCorrection.Saturation = DefaultValues.Saturation
-        ColorCorrection.TintColor = Color3.fromRGB(255, 255, 255)
         ShaderInstances.ColorCorrection = ColorCorrection
     end
-
     if not ShaderInstances.SunRays then
-        local SunRays = Instance.new("SunRaysEffect", Light)
+        local SunRays = Instance.new("SunRaysEffect", Lighting)
         SunRays.Intensity = DefaultValues.SunRaysIntensity
         SunRays.Spread = 0.8
         ShaderInstances.SunRays = SunRays
     end
-
     if not ShaderInstances.Atmosphere then
-        local Atmosphere = Instance.new("Atmosphere", Light)
+        local Atmosphere = Instance.new("Atmosphere", Lighting)
         Atmosphere.Density = DefaultValues.AtmosphereDensity
-        Atmosphere.Offset = 0.25
-        Atmosphere.Glare = 0.1
-        Atmosphere.Haze = 2
         Atmosphere.Color = DefaultValues.AtmosphereColor
         ShaderInstances.Atmosphere = Atmosphere
     end
 end
 
--- Function to Remove Shaders
 local function RemoveShaders()
     for _, shader in pairs(ShaderInstances) do
         if shader and shader.Parent then
             shader:Destroy()
         end
     end
-    ShaderInstances = {
-        Sky = nil,
-        Bloom = nil,
-        Blur = nil,
-        ColorCorrection = nil,
-        SunRays = nil,
-        Atmosphere = nil
-    }
+    ShaderInstances = {}
 end
 
--- Motion Blur Logic
-RunService.RenderStepped:Connect(function()
-    if motionBlurEnabled then
-        local currentCameraPosition = Camera.CFrame.Position
-        local cameraVelocity = (currentCameraPosition - prevCameraPosition).Magnitude
-        BlurEffect.Size = math.clamp(cameraVelocity * blurIntensityFactor, 0, 24) -- Adjust blur size
-        prevCameraPosition = currentCameraPosition
-    end
-end)
-
--- Function to Reset All Values
 local function ResetToDefault()
-    -- Reset Lighting
-    Light.ClockTime = DefaultValues.ClockTime
-    Light.Brightness = DefaultValues.Brightness
-    Light.Ambient = DefaultValues.Ambient
-    Light.OutdoorAmbient = DefaultValues.OutdoorAmbient
-
-    -- Remove all shaders
+    Lighting.ClockTime = DefaultValues.ClockTime
+    Lighting.Brightness = DefaultValues.Brightness
+    Lighting.Ambient = DefaultValues.Ambient
+    Lighting.OutdoorAmbient = DefaultValues.OutdoorAmbient
     RemoveShaders()
-
-    -- Reset UI Toggles and Sliders
-    Toggle_EnableShaders:Set(false) -- Reset the Enable Shaders toggle
+    Toggle_EnableShaders:Set(false)
     Slider_TimeOfDay:Set(DefaultValues.ClockTime)
+    Slider_Brightness:Set(DefaultValues.Brightness)
     Slider_BloomIntensity:Set(DefaultValues.BloomIntensity)
     Slider_BlurSize:Set(DefaultValues.BlurSize)
     Slider_SunRaysIntensity:Set(DefaultValues.SunRaysIntensity)
@@ -178,169 +360,70 @@ local function ResetToDefault()
     ColorPicker_AtmosphereColor:Set(DefaultValues.AtmosphereColor)
     Toggle_RainbowAtmosphere:Set(DefaultValues.RainbowEnabled)
     Slider_RainbowSpeed:Set(DefaultValues.RainbowSpeed)
-    Slider_Brightness:Set(DefaultValues.Brightness)
     Toggle_MotionBlur:Set(false)
-
-
-    -- Reset Rainbow Atmosphere
     rainbowEnabled = DefaultValues.RainbowEnabled
     rainbowSpeed = DefaultValues.RainbowSpeed
-
-    print("All settings reset to default.")
 end
 
--- Function to load the emotes script
-local function LoadEmotesGui()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/H20CalibreYT/SystemBroken/main/AllEmotes"))()
-    print("Emotes GUI loaded.")
- end
+RunService.RenderStepped:Connect(function()
+    if motionBlurEnabled then
+        local currentCameraPosition = Camera.CFrame.Position
+        local velocity = (currentCameraPosition - Camera.CFrame.Position).Magnitude
+        BlurEffect.Size = math.clamp(velocity * blurIntensityFactor, 0, 24)
+    end
+end)
 
--- Rainbow Effect Logic
-RunService.Heartbeat:Connect(function(deltaTime)
+RunService.Heartbeat:Connect(function(dt)
     if rainbowEnabled and ShaderInstances.Atmosphere then
-        rainbowHue = (rainbowHue + deltaTime * rainbowSpeed) % 1 -- Increment hue based on speed and delta time
-        local rainbowColor = Color3.fromHSV(rainbowHue, 1, 1) -- Convert hue to a rainbow color
-        ShaderInstances.Atmosphere.Color = rainbowColor -- Apply the color to the atmosphere
+        rainbowHue = (rainbowHue + dt * rainbowSpeed) % 1
+        ShaderInstances.Atmosphere.Color = Color3.fromHSV(rainbowHue, 1, 1)
     end
 end)
 
--- VC ban listener
-game:GetService("VoiceChatInternal").LocalPlayerModerated:Connect(function()
-    if isRejoinEnabled then
-        game:GetService("VoiceChatService"):RejoinVoice()
-    end
-end)
-
--- Create Tabs
-local GeneralTab = Window:CreateTab("General", "earth")
-local AtmosphereTab = Window:CreateTab("Atmosphere", "cloud-rain")
-local EffectsTab = Window:CreateTab("Effects", "sliders")
-local OtherTab = Window:CreateTab("Other", "meh")
-local SettingsTab = Window:CreateTab("Settings", "settings")
-
--- General Tab
-Toggle_EnableShaders = GeneralTab:CreateToggle({
+Toggle_EnableShaders = ShaderTab:CreateToggle({
     Name = "Enable Shaders",
     CurrentValue = false,
     Callback = function(enabled)
         if enabled then
             ApplyShaders()
-            print("Shaders enabled.")
         else
             RemoveShaders()
-            print("Shaders disabled.")
         end
     end
 })
 
-Slider_TimeOfDay = GeneralTab:CreateSlider({
+Slider_TimeOfDay = ShaderTab:CreateSlider({
     Name = "Time of Day",
     Range = {0, 24},
     Increment = 0.1,
     CurrentValue = DefaultValues.ClockTime,
     Callback = function(value)
-        Light.ClockTime = value
-        print("Time of day set to: " .. value)
+        Lighting.ClockTime = value
     end
 })
 
-Slider_Brightness = GeneralTab:CreateSlider({
+Slider_Brightness = ShaderTab:CreateSlider({
     Name = "Brightness",
     Range = {0, 5},
     Increment = 0.1,
-    CurrentValue = Light.Brightness,
+    CurrentValue = DefaultValues.Brightness,
     Callback = function(value)
-        Light.Brightness = value
-        print("Brightness set to: " .. value)
+        Lighting.Brightness = value
     end
 })
 
-Toggle_EnableMotionBlur = GeneralTab:CreateToggle({
+Toggle_MotionBlur = ShaderTab:CreateToggle({
     Name = "Enable Motion Blur",
     CurrentValue = false,
     Callback = function(enabled)
         motionBlurEnabled = enabled
         if not enabled then
-            BlurEffect.Size = 0 -- Reset blur when disabled
+            BlurEffect.Size = 0
         end
     end
 })
 
-EffectsTab:CreateSlider({
-    Name = "Blur Intensity",
-    Range = {1, 10},
-    Increment = 1,
-    CurrentValue = blurIntensityFactor,
-    Callback = function(value)
-        blurIntensityFactor = value
-    end
-})
-
-Button_ResetDefaults = GeneralTab:CreateButton({
-    Name = "Reset to Default",
-    Callback = function()
-        ResetToDefault()
-    end
-})
-
--- Atmosphere Tab
-ColorPicker_AtmosphereColor = AtmosphereTab:CreateColorPicker({
-    Name = "Atmosphere Color",
-    Color = DefaultValues.AtmosphereColor,
-    Callback = function(value)
-        if ShaderInstances.Atmosphere then
-            ShaderInstances.Atmosphere.Color = value
-            print("Atmosphere color set to:", value)
-        end
-    end
-})
-
-Slider_AtmosphereOpacity = AtmosphereTab:CreateSlider({
-    Name = "Atmosphere Opacity",
-    Range = {0, 1},
-    Increment = 0.01,
-    CurrentValue = DefaultValues.AtmosphereDensity,
-    Callback = function(value)
-        if ShaderInstances.Atmosphere then
-            ShaderInstances.Atmosphere.Density = value
-            print("Atmosphere opacity set to:", value)
-        end
-    end
-})
-
-Toggle_RainbowAtmosphere = AtmosphereTab:CreateToggle({
-    Name = "Rainbow Atmosphere",
-    CurrentValue = DefaultValues.RainbowEnabled,
-    Callback = function(enabled)
-        rainbowEnabled = enabled
-        print("Rainbow Atmosphere " .. (enabled and "Enabled" or "Disabled"))
-    end
-})
-
-AtmosphereTab:CreateSlider({
-    Name = "Water Wave Size",
-    Range = {0, 1},
-    Increment = 0.01,
-    CurrentValue = workspace.Terrain.WaterWaveSize,
-    Callback = function(value)
-        workspace.Terrain.WaterWaveSize = value
-        print("Water Wave Size set to: " .. value)
-    end
-})
-
-Slider_RainbowSpeed = AtmosphereTab:CreateSlider({
-    Name = "Rainbow Speed",
-    Range = {0.1, 1},
-    Increment = 0.1,
-    CurrentValue = DefaultValues.RainbowSpeed,
-    Callback = function(value)
-        rainbowSpeed = value
-        print("Rainbow Speed set to: " .. value)
-    end
-})
-
--- Effects Tab
-Slider_BloomIntensity = EffectsTab:CreateSlider({
+Slider_BloomIntensity = ShaderTab:CreateSlider({
     Name = "Bloom Intensity",
     Range = {0, 2},
     Increment = 0.1,
@@ -352,7 +435,7 @@ Slider_BloomIntensity = EffectsTab:CreateSlider({
     end
 })
 
-Slider_BlurSize = EffectsTab:CreateSlider({
+Slider_BlurSize = ShaderTab:CreateSlider({
     Name = "Blur Size",
     Range = {0, 20},
     Increment = 1,
@@ -364,7 +447,7 @@ Slider_BlurSize = EffectsTab:CreateSlider({
     end
 })
 
-Slider_SunRaysIntensity = EffectsTab:CreateSlider({
+Slider_SunRaysIntensity = ShaderTab:CreateSlider({
     Name = "Sun Rays Intensity",
     Range = {0, 1},
     Increment = 0.1,
@@ -376,7 +459,7 @@ Slider_SunRaysIntensity = EffectsTab:CreateSlider({
     end
 })
 
-Slider_Saturation = EffectsTab:CreateSlider({
+Slider_Saturation = ShaderTab:CreateSlider({
     Name = "Saturation",
     Range = {-1, 1},
     Increment = 0.1,
@@ -388,105 +471,80 @@ Slider_Saturation = EffectsTab:CreateSlider({
     end
 })
 
---Useful Other Stuff
-local Toggle_VcUnban = OtherTab:CreateToggle({
-    Name = "Auto-UnBan Voice Chat",
-    CurrentValue= false,
-    Flag = "RejoinVoiceChat",
+Slider_AtmosphereOpacity = ShaderTab:CreateSlider({
+    Name = "Atmosphere Opacity",
+    Range = {0, 1},
+    Increment = 0.01,
+    CurrentValue = DefaultValues.AtmosphereDensity,
     Callback = function(value)
-        isRejoinEnabled = value
-end,
+        if ShaderInstances.Atmosphere then
+            ShaderInstances.Atmosphere.Density = value
+        end
+    end
 })
 
- OtherTab:CreateButton({
+ColorPicker_AtmosphereColor = ShaderTab:CreateColorPicker({
+    Name = "Atmosphere Color",
+    Color = DefaultValues.AtmosphereColor,
+    Callback = function(value)
+        if ShaderInstances.Atmosphere then
+            ShaderInstances.Atmosphere.Color = value
+        end
+    end
+})
+
+Toggle_RainbowAtmosphere = ShaderTab:CreateToggle({
+    Name = "Rainbow Atmosphere",
+    CurrentValue = DefaultValues.RainbowEnabled,
+    Callback = function(enabled)
+        rainbowEnabled = enabled
+    end
+})
+
+Slider_RainbowSpeed = ShaderTab:CreateSlider({
+    Name = "Rainbow Speed",
+    Range = {0.1, 1},
+    Increment = 0.1,
+    CurrentValue = DefaultValues.RainbowSpeed,
+    Callback = function(value)
+        rainbowSpeed = value
+    end
+})
+
+ShaderTab:CreateButton({
+    Name = "Reset to Default",
+    Callback = function()
+        ResetToDefault()
+    end
+})
+---------------------------------------------------
+-- Other Tab
+---------------------------------------------------
+local OtherTab = Window:CreateTab("Other", "meh")
+OtherTab:CreateButton({
     Name = "IY",
     Callback = function()
              local IsStudio = false
              loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
 end,
 })
-
-OtherTab:CreateInput({
-    Name = "Copy User's Avatar (NEEDS ADMIN GAMEPASS)",
-    CurrentValue = "", -- Start with an empty value
-    PlaceholderText = "Enter Roblox Username",
-    RemoveTextAfterFocusLost = true,
-    Flag = "CopyAvatarInput", -- Unique flag for this input
-    Callback = function(inputValue)
-        -- Fire the server event with the input value
-        local args = {
-            [1] = inputValue -- User-provided value
-        }
-
-        -- Trigger the server-side event
-        game:GetService("ReplicatedStorage").ModifyUsername:FireServer(unpack(args))
-
-        -- Feedback for debugging or user notification
-        print("Fired server with username: " .. inputValue)
-        Rayfield:Notify({
-            Title = "Success",
-            Content = "Username '" .. inputValue .. "' sent to the server.",
-            Duration = 5
-        })
-    end
-})
-
-OtherTab:CreateToggle({
-    Name = "No Void",
-    CurrentValue = false, -- The initial state of the toggle (off)
-    Flag = "NoVoidToggle", -- Unique identifier for the toggle
-    Callback = function(enabled)
-        local isStudio = game:GetService("RunService"):IsStudio()
-        if isStudio then
-            warn("This feature cannot be used in Studio mode.")
-            return
-        end
- 
-        local Workspace = game:GetService("Workspace")
-        local Terrain = Workspace.Terrain
- 
-        if enabled then
-            -- Fill the void when the toggle is enabled
-            Terrain:FillBlock(CFrame.new(66, -10, 72.5), Vector3.new(10000, 16, 10000), Enum.Material.Asphalt)
-            print("Void filled.")
-        else
-            -- Remove the filled block when the toggle is disabled
-            Terrain:Clear() -- This will clear all terrain modifications; adjust if you want more specific removal.
-            print("Void cleared.")
-        end
-    end,
- })
-
-
--- Button to load the Emotes GUI
-OtherTab:CreateButton({
-    Name = "Load Emotes GUI",
-    Callback = function()
-        LoadEmotesGui()
-    end,
- })
- 
- -- Slider to adjust animation speed
 OtherTab:CreateSlider({
     Name = "Animation Speed",
-    Range = {-5, 5}, -- Adjust the range as needed
+    Range = {-5, 5},
     Increment = 0.01,
     Suffix = "x",
-    CurrentValue = AnimationSpeed,
+    CurrentValue = 1,
     Flag = "AnimationSpeedSlider",
     Callback = function(Value)
-        AnimationSpeed = Value
-        print("Animation speed set to: " .. AnimationSpeed .. "x")
-        -- Apply animation speed adjustment to emotes
-        local Humanoid = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        print("Animation speed set to: " .. Value .. "x")
+        local Humanoid = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if Humanoid then
             for _, anim in pairs(Humanoid:GetPlayingAnimationTracks()) do
-                anim:AdjustSpeed(AnimationSpeed)
+                anim:AdjustSpeed(Value)
             end
         end
-    end,
- })
-
+    end
+})
 -- Toggle to Freeze animations
 OtherTab:CreateButton({
     Name = "Freeze Animation",
