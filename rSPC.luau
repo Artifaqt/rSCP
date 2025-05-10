@@ -47,8 +47,8 @@ local DefaultValues = {
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "Roblox Enhancement Suite",
-    LoadingTitle = "Loading Modules...",
+    Name = "PoopyPants Enhancement Suite",
+    LoadingTitle = "Loading farts...",
     LoadingSubtitle = "by Artifaqt",
     ConfigurationSaving = {
         Enabled = true,
@@ -57,21 +57,6 @@ local Window = Rayfield:CreateWindow({
     },
     KeySystem = false
 })
--- Rayfield UI
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
-
-local Window = Rayfield:CreateWindow({
-    Name = "Roblox Enhancement Suite",
-    LoadingTitle = "Loading Modules...",
-    LoadingSubtitle = "by Artifaqt",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "Rayfield",
-        FileName = "EnhancedControlPanel"
-    },
-    KeySystem = false
-})
-
 ---------------------------------------------------
 -- Voice Chat Tab
 ---------------------------------------------------
